@@ -12,9 +12,9 @@ android {
 
     defaultConfig {
         applicationId = "com.yuanshan.locbeacon"
-        // minSdk 33 (Android 13)：解锁 miuix-blur / squircle 的 RuntimeShader 路径，
-        // 也是 Miuix 模糊效果的最低要求
-        minSdk = 33
+        // minSdk 35 (Android 15)：设备必须跑 Android 15 及以上才能安装。
+        // 好处是 miuix-blur / squircle 的 RuntimeShader 路径恒可用，不用做能力探测
+        minSdk = 35
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
