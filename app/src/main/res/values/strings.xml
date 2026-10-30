@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">位置感知</string>
+    <string name="subtitle">连上 AstrBot 后，只有它请求位置时才取点，平时不定位。</string>
+    <string name="label_url">服务器地址</string>
+    <string name="hint_url">wss://你的域名/ws</string>
+    <string name="label_token">Token</string>
+    <string name="hint_token">和插件配置里的 token 一致</string>
+    <string name="btn_connect">保存并连接</string>
+    <string name="btn_stop">断开</string>
+    <string name="btn_battery">允许后台运行（关闭电池优化）</string>
+</resources>
