@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       # ubuntu runner 预装了 Android SDK，不再用 android-actions/setup-android
       - name: Install SDK packages
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
-          gradle-version: '8.14'
+          gradle-version: '9.8.2'
 
       - name: Build debug APK
         run: gradle assembleDebug --no-daemon --stacktrace

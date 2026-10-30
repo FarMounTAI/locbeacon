@@ -8,7 +8,13 @@ plugins {
 
 android {
     namespace = "com.yuanshan.locbeacon"
-    compileSdk = 37
+
+    // AGP 9 的块式 DSL，不再是 compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 0
+        }
+    }
 
     defaultConfig {
         applicationId = "com.yuanshan.locbeacon"
@@ -22,16 +28,6 @@ android {
 
     buildFeatures {
         compose = true
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
     }
 
     compileOptions {
