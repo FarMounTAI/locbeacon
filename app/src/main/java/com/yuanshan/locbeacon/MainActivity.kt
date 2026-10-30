@@ -6,81 +6,203 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.delay
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
 
 /**
- * 设置页：填服务器地址和 Token，控制服务启停，申请后台运行权限。
- * 界面极简是故意的——这个 App 的全部价值在后台那个 Service 里。
+ * 设置页，用 Miuix（HyperOS 设计语言）实现。
+ * 界面只有三个东西：填地址和 Token、连接/断开、状态显示。
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
 
-    private lateinit var etUrl: EditText
-    private lateinit var etToken: EditText
-    private lateinit var tvStatus: TextView
     private lateinit var prefs: Prefs
-
-    private val handler = Handler(Looper.getMainLooper())
-
-    private val ticker = object : Runnable {
-        override fun run() {
-            refreshStatus()
-            handler.postDelayed(this, 1000)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        enableEdgeToEdge()
 
         prefs = Prefs(this)
-        etUrl = findViewById(R.id.etUrl)
-        etToken = findViewById(R.id.etToken)
-        tvStatus = findViewById(R.id.tvStatus)
-
-        etUrl.setText(prefs.url)
-        etToken.setText(prefs.token)
-
-        findViewById<Button>(R.id.btnConnect).setOnClickListener { startTracking() }
-        findViewById<Button>(R.id.btnStop).setOnClickListener { stopTracking() }
-        findViewById<Button>(R.id.btnBattery).setOnClickListener { requestIgnoreBattery() }
-
         requestPermissionsIfNeeded()
-        refreshStatus()
+
+        setContent {
+            MiuixTheme(
+                controller = remember { ThemeController(ColorSchemeMode.System) },
+                textStyles = MiuixTheme.textStyles,
+            ) {
+                var urlField by remember { mutableStateOf(TextFieldValue(prefs.url)) }
+                var tokenField by remember { mutableStateOf(TextFieldValue(prefs.token)) }
+                var statusText by remember { mutableStateOf("正在读取状态…") }
+                var batteryFree by remember { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        statusText = statusSnapshot()
+                        batteryFree = isBatteryUnrestricted()
+                        delay(1000)
+                    }
+                }
+
+                SettingsScreen(
+                    urlField = urlField,
+                    onUrlChange = { urlField = it },
+                    tokenField = tokenField,
+                    onTokenChange = { tokenField = it },
+                    statusText = statusText,
+                    batteryFree = batteryFree,
+                    onConnect = {
+                        prefs.url = urlField.text
+                        prefs.token = tokenField.text
+                        startTracking()
+                    },
+                    onStop = { stopTracking() },
+                    onBatteryClick = { requestIgnoreBattery() },
+                )
+            }
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-        handler.post(ticker)
+    // ---------------------------------------------------------------- 界面
+
+    @Composable
+    private fun SettingsScreen(
+        urlField: TextFieldValue,
+        onUrlChange: (TextFieldValue) -> Unit,
+        tokenField: TextFieldValue,
+        onTokenChange: (TextFieldValue) -> Unit,
+        statusText: String,
+        batteryFree: Boolean,
+        onConnect: () -> Unit,
+        onStop: () -> Unit,
+        onBatteryClick: () -> Unit,
+    ) {
+        val scrollBehavior = MiuixScrollBehavior()
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = "位置感知",
+                    subtitle = "只在 Bot 要位置时才取点",
+                    scrollBehavior = scrollBehavior,
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Card {
+                    TextField(
+                        value = urlField,
+                        onValueChange = onUrlChange,
+                        label = "服务器地址",
+                        useLabelAsPlaceholder = true,
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                    TextField(
+                        value = tokenField,
+                        onValueChange = onTokenChange,
+                        label = "Token",
+                        useLabelAsPlaceholder = true,
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = onConnect,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("保存并连接")
+                    }
+                    Button(
+                        onClick = onStop,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("断开")
+                    }
+                }
+
+                Card {
+                    SwitchPreference(
+                        title = "允许后台运行",
+                        summary = "关闭电池优化，长连接才不会被系统掐断",
+                        checked = batteryFree,
+                        onCheckedChange = { onBatteryClick() },
+                    )
+                }
+
+                SmallTitle("状态")
+
+                Card {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = statusText,
+                            style = MiuixTheme.textStyles.body2,
+                        )
+                    }
+                }
+            }
+        }
     }
 
-    override fun onPause() {
-        super.onPause()
-        handler.removeCallbacks(ticker)
-    }
-
-    // ---------------------------------------------------------------- 操作
+    // ---------------------------------------------------------------- 服务控制
 
     private fun startTracking() {
-        prefs.url = etUrl.text.toString()
-        prefs.token = etToken.text.toString()
-
         if (prefs.url.isBlank() || prefs.token.isBlank()) {
             toast("先把服务器地址和 Token 填上")
             return
         }
 
-        // Android 14 起，location 类型的前台服务必须在已有定位权限时才能启动，
-        // 否则 startForeground 直接抛 SecurityException。先挡一道。
+        // Android 14 起，location 类型前台服务必须在已有定位权限时才能启动
         val hasLocation =
             ContextCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -95,29 +217,26 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            val intent = Intent(this, LocationService::class.java)
-            ContextCompat.startForegroundService(this, intent)
-            toast("已启动，看通知栏")
+            ContextCompat.startForegroundService(
+                this, Intent(this, LocationService::class.java)
+            )
+            toast("已启动，通知栏有常驻提示")
         } catch (e: Exception) {
             toast("启动失败：${e.message}")
-            return
         }
-        handler.postDelayed({ refreshStatus() }, 500)
     }
 
     private fun stopTracking() {
         stopService(Intent(this, LocationService::class.java))
         toast("已停止")
-        handler.postDelayed({ refreshStatus() }, 300)
     }
 
     /**
-     * 申请电池优化豁免。这是让长连接在 Doze 模式下不被断网的关键，
-     * 比“自启动权限”重要得多——自启动只负责被杀后拉起，管不了 Doze。
+     * 电池优化豁免是长连接能活下来的关键，比“自启动”重要得多——
+     * 自启动只负责被杀后拉起，管不了 Doze 断网。
      */
     private fun requestIgnoreBattery() {
-        val pm = getSystemService(PowerManager::class.java)
-        if (pm.isIgnoringBatteryOptimizations(packageName)) {
+        if (isBatteryUnrestricted()) {
             toast("已经允许后台运行了")
             return
         }
@@ -127,7 +246,6 @@ class MainActivity : AppCompatActivity() {
                     .setData(Uri.parse("package:$packageName"))
             )
         } catch (e: Exception) {
-            // 部分 ROM 不支持直达页，退到电池优化列表让用户自己找
             try {
                 startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             } catch (e2: Exception) {
@@ -136,7 +254,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ---------------------------------------------------------------- 权限与状态
+    // ---------------------------------------------------------------- 状态与权限
+
+    private fun isBatteryUnrestricted(): Boolean =
+        getSystemService(PowerManager::class.java)
+            ?.isIgnoringBatteryOptimizations(packageName) == true
+
+    private fun statusSnapshot(): String = buildString {
+        append(if (LocationService.running) "服务运行中" else "服务未运行")
+        append("\n")
+        append(LocationService.status)
+    }
 
     private fun requestPermissionsIfNeeded() {
         val wanted = mutableListOf(
@@ -153,21 +281,6 @@ class MainActivity : AppCompatActivity() {
         if (missing.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, missing.toTypedArray(), REQ_PERMS)
         }
-    }
-
-    private fun refreshStatus() {
-        val batteryOk = getSystemService(PowerManager::class.java)
-            .isIgnoringBatteryOptimizations(packageName)
-
-        val lines = buildString {
-            append("服务：")
-            append(if (LocationService.running) "运行中" else "未运行")
-            append("\n状态：")
-            append(LocationService.status)
-            append("\n后台运行：")
-            append(if (batteryOk) "已允许" else "未允许（点上面第三个按钮）")
-        }
-        tvStatus.text = lines
     }
 
     private fun toast(msg: String) {

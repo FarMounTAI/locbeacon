@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LocBeacon" parent="Theme.AppCompat.DayNight.NoActionBar" />
+    <!-- 界面已迁到 Compose + Miuix，这里只需要一个无 ActionBar 的容器主题。
+         ComponentActivity 不要求 AppCompat 主题，所以用系统主题即可，省掉 appcompat 依赖。 -->
+    <style name="Theme.LocBeacon" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
 </resources>
