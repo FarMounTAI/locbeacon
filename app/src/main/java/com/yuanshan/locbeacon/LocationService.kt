@@ -103,13 +103,10 @@ class LocationService : Service() {
     private fun startAsForeground() {
         val notification = buildNotification()
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-                )
-            } else {
-                startForeground(NOTIF_ID, notification)
-            }
+            // minSdk 33，三参数的 startForeground 直接可用（API 29 引入）
+            startForeground(
+                NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            )
         } catch (e: Exception) {
             // 没有定位权限时 Android 14 会在这里抛 SecurityException
             Log.e(TAG, "startForeground 失败: ${e.message}")
