@@ -30,7 +30,9 @@ jobs:
           set -x
           sdkmanager --version
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-37" "build-tools;37.0.0"
+          # API 37 按 minor SDK 拆成 37.0/37.1/37.2，不存在裸的 platforms;android-37。
+          # 这里的 37.0 必须和 app/build.gradle.kts 里的 minorApiLevel = 0 对上。
+          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
 
