@@ -8,14 +8,14 @@ plugins {
 
 android {
     namespace = "com.yuanshan.locbeacon"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.yuanshan.locbeacon"
         // minSdk 33 (Android 13)：解锁 miuix-blur / squircle 的 RuntimeShader 路径，
         // 也是 Miuix 模糊效果的最低要求
         minSdk = 33
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
     }
