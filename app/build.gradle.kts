@@ -1,8 +1,6 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    // AGP 9 内置 Kotlin，不再需要 org.jetbrains.kotlin.android
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -36,11 +34,8 @@ android {
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
-    }
-}
+// 注意：内置 Kotlin 后没有 kotlin { compilerOptions { } } 这个扩展了，
+// Kotlin 的 jvmTarget 由上面的 compileOptions 自动对齐。
 
 dependencies {
     implementation("androidx.core:core-ktx:1.19.1")
